@@ -3,6 +3,9 @@ import { getNeighborhood, getAllNeighborhoods, neighborhoodSlug, toSlug, heroIma
 import { getPOILinks, getGoogleMapsPinUrl, getGYGUrl, getViatorUrl } from '../../../lib/affiliate';
 import MapEmbed from '../../../components/MapEmbed';
 import POIGrid from '../../../components/POIGrid';
+import POIList from '../../../components/POIList';
+import PhotoGallery from '../../../components/PhotoGallery';
+import FavoriteButton from '../../../components/FavoriteButton';
 
 export async function generateStaticParams() {
   return getAllNeighborhoods().map((n) => ({ slug: neighborhoodSlug(n) }));
@@ -57,6 +60,9 @@ export default function NeighborhoodPage({ params }) {
           <p style={{ fontSize: 'clamp(18px,2.2vw,24px)', color: '#c9a24b', fontStyle: 'italic', marginTop: 14, maxWidth: 760 }}>
             {n.tag}
           </p>
+          <div style={{ marginTop: 22 }}>
+            <FavoriteButton slug={neighborhoodSlug(n)} name={n.name} city={n.city} country={n.country} tag={n.tag} />
+          </div>
         </div>
       </section>
 
@@ -147,6 +153,12 @@ export default function NeighborhoodPage({ params }) {
           <POIGrid items={poiLinks} />
         </div>
       </section>
+
+      {/* REAL VENUES (OpenStreetMap) */}
+      <POIList pois={n.pois} neighborhood={n.name} city={n.city} />
+
+      {/* PHOTO GALLERY (Wikipedia/Commons) */}
+      <PhotoGallery images={n.gallery} name={n.name} wikiUrl={n.wikiUrl} />
 
       {/* RELATED */}
       {related.length > 0 && (

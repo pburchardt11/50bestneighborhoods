@@ -73,6 +73,7 @@ export default function RootLayout({ children }) {
               <a href="/countries">Countries</a>
               <a href="/top-50">Top 50</a>
               <a href="/blog">Blog</a>
+              <a href="/favorites" aria-label="My favorites">★</a>
               <a href="/about">About</a>
             </div>
           </div>

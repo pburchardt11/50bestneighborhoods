@@ -139,6 +139,103 @@ async function commonsImageFor(title) {
   }
 }
 
+// Fetch up to 8 article images from a Wikipedia page via the REST media-list endpoint.
+// Returns an array of image URLs (not just titles), which can be used directly in img tags.
+async function fetchImageGallery(wikiTitle) {
+  const url = `https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(wikiTitle)}`;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const items = json?.items || [];
+    const out = [];
+    for (const item of items) {
+      if (item.type !== 'image') continue;
+      // Some entries have srcset (preferred), others have src
+      const srcset = item.srcset && item.srcset[0] && item.srcset[0].src;
+      const src = srcset || item.src;
+      if (!src) continue;
+      // Normalize protocol-relative URLs
+      const url = src.startsWith('//') ? `https:${src}` : src;
+      // Skip non-photo formats (svg, gif maps, etc.)
+      if (!/\.(jpe?g|png|webp)(\?|$)/i.test(url)) continue;
+      out.push(url);
+      if (out.length >= 8) break;
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Fetch ~30 nearby points of interest from OpenStreetMap via the Overpass API.
+// Filters to amenity / shop / leisure / tourism nodes within ~1km of the coordinates.
+// Returns categorized arrays so the UI can render them under section headings.
+async function fetchOSMPOIs(coords) {
+  if (!coords?.lat || !coords?.lon) return null;
+  const radius = 800; // metres
+  const lat = coords.lat;
+  const lon = coords.lon;
+  const query = `[out:json][timeout:25];
+(
+  node["amenity"~"^(restaurant|cafe|bar|pub|nightclub|biergarten|fast_food|food_court|ice_cream)$"](around:${radius},${lat},${lon});
+  node["shop"~"^(books|gift|clothes|art|music|antiques|second_hand|boutique|bakery|deli|wine|cheese|chocolate)$"](around:${radius},${lat},${lon});
+  node["tourism"~"^(museum|gallery|attraction|viewpoint|artwork)$"](around:${radius},${lat},${lon});
+  node["leisure"~"^(park|garden)$"](around:${radius},${lat},${lon});
+);
+out body 100;`;
+  const url = 'https://overpass-api.de/api/interpreter';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'User-Agent': UA, 'Content-Type': 'text/plain' },
+      body: query,
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const elements = json?.elements || [];
+    const restaurants = [];
+    const cafes = [];
+    const bars = [];
+    const shops = [];
+    const culture = [];
+    const parks = [];
+    for (const el of elements) {
+      const tags = el.tags || {};
+      const name = tags.name || tags['name:en'];
+      if (!name) continue;
+      const item = { name, lat: el.lat, lon: el.lon };
+      if (tags.amenity === 'restaurant' || tags.amenity === 'fast_food' || tags.amenity === 'food_court' || tags.amenity === 'ice_cream') {
+        if (tags.cuisine) item.cuisine = tags.cuisine.replace(/[_;]/g, ', ');
+        restaurants.push(item);
+      } else if (tags.amenity === 'cafe') {
+        cafes.push(item);
+      } else if (tags.amenity === 'bar' || tags.amenity === 'pub' || tags.amenity === 'nightclub' || tags.amenity === 'biergarten') {
+        bars.push(item);
+      } else if (tags.shop) {
+        item.shop = tags.shop.replace(/_/g, ' ');
+        shops.push(item);
+      } else if (tags.tourism === 'museum' || tags.tourism === 'gallery' || tags.tourism === 'artwork' || tags.tourism === 'viewpoint' || tags.tourism === 'attraction') {
+        item.kind = tags.tourism;
+        culture.push(item);
+      } else if (tags.leisure === 'park' || tags.leisure === 'garden') {
+        parks.push(item);
+      }
+    }
+    // Trim each category to a maximum number of entries to keep file size reasonable
+    return {
+      restaurants: restaurants.slice(0, 12),
+      cafes: cafes.slice(0, 8),
+      bars: bars.slice(0, 8),
+      shops: shops.slice(0, 8),
+      culture: culture.slice(0, 8),
+      parks: parks.slice(0, 5),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Clean up Wikipedia prose: drop parenthetical pronunciation and reference marks.
 // Preserves paragraph breaks (double newlines) so the renderer can paragraph-split.
 function cleanExtract(text) {
@@ -228,20 +325,30 @@ async function main() {
           wikiUrl: `https://en.wikipedia.org/wiki/${n.wiki}`,
           wikiImage: null,
           coords: null,
-          sources: [
-            ...sources(city.country),
-          ],
+          gallery: [],
+          pois: null,
         });
         continue;
       }
       ok++;
       const img = r.originalImage || r.thumbnail || imageFills[i] || null;
       const resolved = r.resolvedTitle ? ` [→ ${r.resolvedTitle}]` : '';
-      const imgMark = img ? '' : ' (no image)';
-      // Grab a longer extract for the body text; fall back to summary extract.
-      const longExtract = await fetchLongExtract(r.resolvedTitle || n.wiki);
+      // Fetch additional content in parallel
+      const titleForExtras = r.resolvedTitle || n.wiki;
+      const coords = r.coordinates ? { lat: r.coordinates.lat, lon: r.coordinates.lon } : null;
+      // OSM Overpass is gated behind FETCH_POIS=1 because it's much slower than
+      // the Wikipedia endpoints (5-15 sec/query). Run a separate POI-only pass
+      // when you want to refresh venue data.
+      const [longExtract, gallery, pois] = await Promise.all([
+        fetchLongExtract(titleForExtras),
+        fetchImageGallery(titleForExtras),
+        process.env.FETCH_POIS === '1' ? fetchOSMPOIs(coords) : Promise.resolve(null),
+      ]);
       const bodyText = longExtract && longExtract.length > r.extract.length ? longExtract : r.extract;
-      console.log(`  ✓ ${n.name}  (${bodyText.length} chars${resolved}${imgMark})`);
+      // Filter the gallery to remove the hero image (already shown separately)
+      const galleryFiltered = (gallery || []).filter((u) => u !== img).slice(0, 6);
+      const poiCount = pois ? (pois.restaurants.length + pois.cafes.length + pois.bars.length + pois.shops.length + pois.culture.length + pois.parks.length) : 0;
+      console.log(`  ✓ ${n.name}  (${bodyText.length}c, ${galleryFiltered.length}img, ${poiCount}poi${resolved})`);
       entries.push({
         name: n.name,
         city: city.name,
@@ -252,11 +359,9 @@ async function main() {
         highlights: r.description ? [r.description] : [],
         wikiUrl: r.pageUrl,
         wikiImage: img,
-        coords: r.coordinates ? { lat: r.coordinates.lat, lon: r.coordinates.lon } : null,
-        sources: [
-          { pub: 'Wikipedia', url: r.pageUrl },
-          ...sources(city.country),
-        ],
+        coords,
+        gallery: galleryFiltered,
+        pois: pois || null,
       });
     }
   }
