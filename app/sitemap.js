@@ -1,7 +1,9 @@
 import { getAllNeighborhoods, getAllCities, getAllCountries, neighborhoodSlug, toSlug } from '../lib/neighborhood-db';
 import { getAllPosts } from '../lib/blog-data';
 
-const BASE = 'https://www.50bestneighborhoods.com';
+// Override at build time with NEXT_PUBLIC_SITE_URL while DNS is still pointing
+// at vercel.app; remove the env var once 50bestneighborhoods.com goes live.
+const BASE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.50bestneighborhoods.com').replace(/\/$/, '');
 
 export default function sitemap() {
   const now = new Date().toISOString();

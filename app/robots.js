@@ -1,7 +1,9 @@
+const BASE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.50bestneighborhoods.com').replace(/\/$/, '');
+
 export default function robots() {
   return {
     rules: [{ userAgent: '*', allow: '/' }],
-    sitemap: 'https://www.50bestneighborhoods.com/sitemap.xml',
-    host: 'https://www.50bestneighborhoods.com',
+    sitemap: `${BASE}/sitemap.xml`,
+    host: BASE,
   };
 }
