@@ -65,23 +65,77 @@ function toSlug(str) {
   return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-async function fetchSummary(wikiTitle) {
+async function fetchSummaryByTitle(wikiTitle) {
   const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
     if (!res.ok) return { ok: false, status: res.status };
     const json = await res.json();
+    // Disambiguation pages are not what we want.
+    if (json.type === 'disambiguation') return { ok: false, status: 'disambiguation' };
     return {
       ok: true,
+      title: json.title,
       description: json.description || '',
       extract: json.extract || '',
-      pageUrl: json.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${wikiTitle}`,
+      pageUrl: json.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}`,
       thumbnail: json.thumbnail?.source || null,
       originalImage: json.originalimage?.source || null,
       coordinates: json.coordinates || null,
     };
   } catch (e) {
     return { ok: false, error: String(e) };
+  }
+}
+
+// Fallback: search Wikipedia for a neighborhood when the curated title fails.
+async function searchResolve(name, city, country) {
+  const q = `${name} ${city} neighborhood`;
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=3&format=json&origin=*`;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const hits = json?.query?.search || [];
+    if (hits.length === 0) return null;
+    // Prefer hits whose snippet mentions the city name
+    const cityLower = city.toLowerCase();
+    const best = hits.find((h) => (h.snippet || '').toLowerCase().includes(cityLower)) || hits[0];
+    return best.title.replace(/ /g, '_');
+  } catch {
+    return null;
+  }
+}
+
+// Resilient fetch: try the curated title, fall back to search.
+async function fetchSummary(wikiTitle, n, city) {
+  const first = await fetchSummaryByTitle(wikiTitle);
+  if (first.ok) return first;
+  const resolved = await searchResolve(n.name, city.name, city.country);
+  if (resolved && resolved !== wikiTitle) {
+    const second = await fetchSummaryByTitle(resolved);
+    if (second.ok) return { ...second, resolvedTitle: resolved };
+  }
+  return first;
+}
+
+// When a summary has no image, try the Commons category "X (neighbourhood)" for one.
+async function commonsImageFor(title) {
+  const category = `Category:${title.replace(/_/g, ' ')}`;
+  const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmtype=file&gcmlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*`;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const pages = json?.query?.pages;
+    if (!pages) return null;
+    for (const p of Object.values(pages)) {
+      const info = p.imageinfo?.[0];
+      if (info?.url && /\.(jpg|jpeg|png)$/i.test(info.url)) return info.url;
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -120,7 +174,14 @@ async function main() {
   for (const city of CITIES) {
     console.log(`\n━━ ${city.name}, ${city.country} ━━`);
     // Fetch all 5 in parallel
-    const results = await Promise.all(city.neighborhoods.map((n) => fetchSummary(n.wiki)));
+    const results = await Promise.all(city.neighborhoods.map((n) => fetchSummary(n.wiki, n, city)));
+    // For entries missing an image, try Wikimedia Commons in parallel
+    const imageFills = await Promise.all(results.map(async (r, i) => {
+      if (!r.ok) return null;
+      if (r.originalImage || r.thumbnail) return null;
+      const title = r.resolvedTitle || city.neighborhoods[i].wiki;
+      return commonsImageFor(title);
+    }));
     for (let i = 0; i < city.neighborhoods.length; i++) {
       total++;
       const n = city.neighborhoods[i];
@@ -128,7 +189,6 @@ async function main() {
       if (!r.ok) {
         console.log(`  ✘ ${n.name}  (${r.status || r.error || 'error'})`);
         failures.push({ city: city.name, name: n.name, wiki: n.wiki });
-        // Fallback stub entry so the page still builds
         entries.push({
           name: n.name, city: city.name, country: city.country, cityRank: n.cityRank,
           tag: n.tag,
@@ -144,7 +204,10 @@ async function main() {
         continue;
       }
       ok++;
-      console.log(`  ✓ ${n.name}  (${r.extract.length} chars)`);
+      const img = r.originalImage || r.thumbnail || imageFills[i] || null;
+      const resolved = r.resolvedTitle ? ` [→ ${r.resolvedTitle}]` : '';
+      const imgMark = img ? '' : ' (no image)';
+      console.log(`  ✓ ${n.name}  (${r.extract.length} chars${resolved}${imgMark})`);
       entries.push({
         name: n.name,
         city: city.name,
@@ -154,7 +217,7 @@ async function main() {
         blurb: buildBlurb(r.extract, `${n.name} — ${n.tag}`),
         highlights: r.description ? [r.description] : [],
         wikiUrl: r.pageUrl,
-        wikiImage: r.originalImage || r.thumbnail,
+        wikiImage: img,
         sources: [
           { pub: 'Wikipedia', url: r.pageUrl },
           ...sources(city.country),

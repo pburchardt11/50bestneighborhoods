@@ -1,5 +1,6 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/react';
+import SearchBar from '../components/SearchBar';
 
 export const metadata = {
   metadataBase: new URL('https://www.50bestneighborhoods.com'),
@@ -60,10 +61,14 @@ export default function RootLayout({ children }) {
                 <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 21, fontWeight: 400, fontStyle: 'italic', color: '#f5f0e8', letterSpacing: 1, lineHeight: 1.15 }}>Neighborhoods</span>
               </span>
             </a>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 22, fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <div style={{ flex: '1 1 320px', maxWidth: 420, margin: '0 20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <SearchBar />
+            </div>
+            <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 22, fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' }}>
               <a href="/cities">Cities</a>
               <a href="/countries">Countries</a>
               <a href="/top-50">Top 50</a>
+              <a href="/blog">Blog</a>
               <a href="/about">About</a>
             </div>
           </div>

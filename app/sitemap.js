@@ -1,4 +1,5 @@
 import { getAllNeighborhoods, getAllCities, getAllCountries, neighborhoodSlug, toSlug } from '../lib/neighborhood-db';
+import { getAllPosts } from '../lib/blog-data';
 
 const BASE = 'https://www.50bestneighborhoods.com';
 
@@ -9,8 +10,12 @@ export default function sitemap() {
     { url: `${BASE}/top-50`, lastModified: now, priority: 0.9 },
     { url: `${BASE}/cities`, lastModified: now, priority: 0.8 },
     { url: `${BASE}/countries`, lastModified: now, priority: 0.8 },
+    { url: `${BASE}/blog`, lastModified: now, priority: 0.7 },
     { url: `${BASE}/about`, lastModified: now, priority: 0.5 },
   ];
+  for (const p of getAllPosts()) {
+    entries.push({ url: `${BASE}/blog/${p.slug}`, lastModified: p.date, priority: 0.6 });
+  }
   for (const n of getAllNeighborhoods()) {
     entries.push({ url: `${BASE}/neighborhood/${neighborhoodSlug(n)}`, lastModified: now, priority: 0.8 });
   }
