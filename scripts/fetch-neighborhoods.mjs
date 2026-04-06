@@ -186,10 +186,12 @@ async function fetchOSMPOIs(coords) {
 out body 100;`;
   const url = 'https://overpass-api.de/api/interpreter';
   try {
+    // Overpass requires the query under a "data" form field with
+    // application/x-www-form-urlencoded — raw POST bodies are silently rejected.
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'User-Agent': UA, 'Content-Type': 'text/plain' },
-      body: query,
+      headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
     });
     if (!res.ok) return null;
     const json = await res.json();

@@ -75,7 +75,7 @@ export default function NeighborhoodPage({ params }) {
               {n.highlights[0]}
             </p>
           )}
-          {n.blurb.split('\n\n').filter(Boolean).map((para, idx) => (
+          {(n.editorialBlurb || n.blurb).split('\n\n').filter(Boolean).map((para, idx) => (
             <p key={idx} style={{ fontSize: 18, lineHeight: 1.78, color: 'var(--text)', marginBottom: 18 }}>{para}</p>
           ))}
           {n.wikiUrl && (
