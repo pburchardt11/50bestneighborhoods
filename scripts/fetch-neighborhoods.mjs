@@ -151,15 +151,34 @@ function cleanExtract(text) {
   return out;
 }
 
-// Build a blurb of up to ~600 chars, preferring whole sentences.
+// Build a blurb of up to ~1500 chars, preferring whole sentences.
 function buildBlurb(extract, fallback) {
   const cleaned = cleanExtract(extract);
   if (!cleaned) return fallback;
-  if (cleaned.length <= 600) return cleaned;
-  // Trim at the last sentence boundary before char 600
-  const trimmed = cleaned.slice(0, 600);
+  if (cleaned.length <= 1500) return cleaned;
+  const trimmed = cleaned.slice(0, 1500);
   const lastDot = Math.max(trimmed.lastIndexOf('. '), trimmed.lastIndexOf('? '), trimmed.lastIndexOf('! '));
-  return (lastDot > 300 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
+  return (lastDot > 800 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
+}
+
+// Fetch a longer plain-text extract via the MediaWiki "extracts" API — up to ~4kB
+// of lead text, which we then trim to our blurb cap. Gives 3-4 paragraphs instead
+// of the 1-2 sentence summary returned by the REST /page/summary endpoint.
+async function fetchLongExtract(wikiTitle) {
+  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exintro=0&exchars=4000&redirects=1&format=json&origin=*&titles=${encodeURIComponent(wikiTitle)}`;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': UA } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const pages = json?.query?.pages;
+    if (!pages) return null;
+    for (const p of Object.values(pages)) {
+      if (p.extract) return p.extract;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function jsEscape(str) {
@@ -207,17 +226,21 @@ async function main() {
       const img = r.originalImage || r.thumbnail || imageFills[i] || null;
       const resolved = r.resolvedTitle ? ` [→ ${r.resolvedTitle}]` : '';
       const imgMark = img ? '' : ' (no image)';
-      console.log(`  ✓ ${n.name}  (${r.extract.length} chars${resolved}${imgMark})`);
+      // Grab a longer extract for the body text; fall back to summary extract.
+      const longExtract = await fetchLongExtract(r.resolvedTitle || n.wiki);
+      const bodyText = longExtract && longExtract.length > r.extract.length ? longExtract : r.extract;
+      console.log(`  ✓ ${n.name}  (${bodyText.length} chars${resolved}${imgMark})`);
       entries.push({
         name: n.name,
         city: city.name,
         country: city.country,
         cityRank: n.cityRank,
         tag: n.tag,
-        blurb: buildBlurb(r.extract, `${n.name} — ${n.tag}`),
+        blurb: buildBlurb(bodyText, `${n.name} — ${n.tag}`),
         highlights: r.description ? [r.description] : [],
         wikiUrl: r.pageUrl,
         wikiImage: img,
+        coords: r.coordinates ? { lat: r.coordinates.lat, lon: r.coordinates.lon } : null,
         sources: [
           { pub: 'Wikipedia', url: r.pageUrl },
           ...sources(city.country),

@@ -1,6 +1,7 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/react';
 import SearchBar from '../components/SearchBar';
+import LanguageToggle from '../components/LanguageToggle';
 
 export const metadata = {
   metadataBase: new URL('https://www.50bestneighborhoods.com'),
@@ -90,6 +91,7 @@ export default function RootLayout({ children }) {
             </a>. Editorial rankings, commentary and original prose are © 50 Best Neighborhoods. External publications are linked for reference only.
           </div>
         </footer>
+        <LanguageToggle />
         <Analytics />
       </body>
     </html>

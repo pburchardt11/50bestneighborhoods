@@ -1,4 +1,5 @@
 import { getAllCities, getAllCountries, getTop50, getStats, neighborhoodSlug, toSlug, cardImage } from '../lib/neighborhood-db';
+import RandomButton from '../components/RandomButton';
 
 export const metadata = {
   title: "50 Best Neighborhoods — The World's Greatest City Districts, Ranked",
@@ -44,6 +45,7 @@ export default function HomePage() {
           <div style={{ marginTop: 40, display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/top-50" style={btnPrimary}>Browse the Top 50</a>
             <a href="/cities" style={btnGhost}>All Cities</a>
+            <RandomButton />
           </div>
         </div>
       </section>
