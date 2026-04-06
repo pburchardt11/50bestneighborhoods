@@ -47,9 +47,7 @@ export default function CityPage({ params }) {
                 background: `linear-gradient(180deg, rgba(10,10,10,0) 40%, rgba(10,10,10,0.92) 100%), url('${cardImage(n)}') center/cover no-repeat, #1a1a1a`,
                 position: 'relative',
               }}>
-                <div style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(201,162,75,0.2)', color: '#c9a24b', border: '1px solid rgba(201,162,75,0.45)', padding: '5px 12px', fontSize: 11, fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  #{n.cityRank}
-                </div>
+                <div className="rank-badge large">#{n.cityRank}</div>
                 <div style={{ position: 'absolute', bottom: 14, left: 16, right: 16 }}>
                   <div className="serif-display" style={{ fontSize: 28, color: '#f5f0e8' }}>{n.name}</div>
                   <div style={{ color: '#c9a24b', fontStyle: 'italic', fontSize: 14, marginTop: 2 }}>{n.tag}</div>

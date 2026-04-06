@@ -57,7 +57,7 @@ export default function CountryPage({ params }) {
                   background: `linear-gradient(180deg, rgba(10,10,10,0) 40%, rgba(10,10,10,0.92) 100%), url('${cardImage(n)}') center/cover no-repeat, #1a1a1a`,
                   position: 'relative',
                 }}>
-                  <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(201,162,75,0.18)', color: '#c9a24b', border: '1px solid rgba(201,162,75,0.4)', padding: '4px 10px', fontSize: 10, fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5, textTransform: 'uppercase' }}>#{n.cityRank}</div>
+                  <div className="rank-badge">#{n.cityRank}</div>
                   <div style={{ position: 'absolute', bottom: 12, left: 14, right: 14 }}>
                     <div className="serif-display" style={{ fontSize: 22, color: '#f5f0e8' }}>{n.name}</div>
                     <div style={{ color: '#c9a24b', fontStyle: 'italic', fontSize: 13 }}>{n.tag}</div>

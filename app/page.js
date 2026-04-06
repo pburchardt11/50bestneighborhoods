@@ -1,5 +1,6 @@
 import { getAllCities, getAllCountries, getTop50, getStats, neighborhoodSlug, toSlug, cardImage } from '../lib/neighborhood-db';
 import RandomButton from '../components/RandomButton';
+import NewsletterForm from '../components/NewsletterForm';
 
 export const metadata = {
   title: "50 Best Neighborhoods — The World's Greatest City Districts, Ranked",
@@ -61,9 +62,7 @@ export default function HomePage() {
                 background: `linear-gradient(180deg, rgba(10,10,10,0) 40%, rgba(10,10,10,0.9) 100%), url('${cardImage(n)}') center/cover no-repeat, #1a1a1a`,
                 position: 'relative',
               }}>
-                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(201,162,75,0.18)', color: '#c9a24b', border: '1px solid rgba(201,162,75,0.4)', padding: '4px 10px', fontSize: 11, fontFamily: "'Outfit', sans-serif", letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  #{i + 1}
-                </div>
+                <div className="rank-badge large">#{i + 1}</div>
                 <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12 }}>
                   <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#c9a24b' }}>{n.city}, {n.country}</div>
                   <div className="serif-display" style={{ fontSize: 24, color: '#f5f0e8', marginTop: 2 }}>{n.name}</div>
@@ -88,6 +87,22 @@ export default function HomePage() {
               <div style={{ marginTop: 12, fontFamily: "'Outfit', sans-serif", fontSize: 12, color: 'var(--accent)' }}>{c.count} neighborhoods →</div>
             </a>
           ))}
+        </div>
+      </section>
+
+      {/* NEWSLETTER */}
+      <section className="container" style={{ marginTop: 80 }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', padding: 40, border: '1px solid var(--border)', background: 'rgba(201,162,75,0.04)' }}>
+          <div className="eyebrow">The Dispatch</div>
+          <h2 className="serif-display" style={{ fontSize: 'clamp(32px,5vw,48px)', fontWeight: 400, margin: '12px 0 14px', color: '#f5f0e8' }}>
+            One neighborhood, every <em style={{ color: '#c9a24b', fontStyle: 'italic' }}>Sunday</em>
+          </h2>
+          <p style={{ color: 'var(--text-dim)', fontSize: 16, lineHeight: 1.7, marginBottom: 24, maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>
+            A short editorial dispatch every Sunday morning &mdash; one neighborhood, one travel-tip, one underrated city. No spam, ever.
+          </p>
+          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+            <NewsletterForm compact />
+          </div>
         </div>
       </section>
 

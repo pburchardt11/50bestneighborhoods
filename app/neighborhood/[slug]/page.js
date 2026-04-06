@@ -69,7 +69,9 @@ export default function NeighborhoodPage({ params }) {
               {n.highlights[0]}
             </p>
           )}
-          <p style={{ fontSize: 18, lineHeight: 1.75, color: 'var(--text)' }}>{n.blurb}</p>
+          {n.blurb.split('\n\n').filter(Boolean).map((para, idx) => (
+            <p key={idx} style={{ fontSize: 18, lineHeight: 1.78, color: 'var(--text)', marginBottom: 18 }}>{para}</p>
+          ))}
           {n.wikiUrl && (
             <p style={{ marginTop: 10, fontSize: 12, color: 'var(--text-dim)', fontStyle: 'italic' }}>
               Encyclopedic content adapted from{' '}
@@ -81,24 +83,6 @@ export default function NeighborhoodPage({ params }) {
             </p>
           )}
 
-          <h2 className="serif-display" style={{ fontSize: 28, fontWeight: 400, color: '#f5f0e8', margin: '40px 0 14px' }}>Editorial sources</h2>
-          <p style={{ color: 'var(--text-dim)', fontSize: 14, marginBottom: 20 }}>
-            Our rankings are synthesized from trusted travel and local press. Explore the original coverage:
-          </p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
-            {n.sources.map((s) => (
-              <li key={s.url}>
-                <a href={s.url} target="_blank" rel="noopener noreferrer" className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
-                  <span>
-                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)' }}>Source</span>
-                    <br />
-                    <span className="serif-display" style={{ fontSize: 18 }}>{s.pub}</span>
-                  </span>
-                  <span style={{ color: 'var(--accent)', fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>Read →</span>
-                </a>
-              </li>
-            ))}
-          </ul>
         </article>
 
         <aside>
@@ -108,7 +92,6 @@ export default function NeighborhoodPage({ params }) {
               <Fact label="City" value={<a href={`/city/${toSlug(n.city)}`}>{n.city}</a>} />
               <Fact label="Country" value={<a href={`/country/${toSlug(n.country)}`}>{n.country}</a>} />
               <Fact label="Rank in city" value={`#${n.cityRank} of ${related.length + 1}`} />
-              <Fact label="Sources" value={`${n.sources.length} editorial`} />
               {n.coords && <Fact label="Coordinates" value={`${n.coords.lat.toFixed(3)}, ${n.coords.lon.toFixed(3)}`} />}
             </dl>
           </div>

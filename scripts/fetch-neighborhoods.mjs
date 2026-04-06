@@ -139,33 +139,45 @@ async function commonsImageFor(title) {
   }
 }
 
-// Clean up Wikipedia prose: drop parenthetical pronunciation, reference marks, and trim.
+// Clean up Wikipedia prose: drop parenthetical pronunciation and reference marks.
+// Preserves paragraph breaks (double newlines) so the renderer can paragraph-split.
 function cleanExtract(text) {
   if (!text) return '';
   let out = text;
-  // Drop IPA/pronunciation parenthetical chunks that are hard to read in a card.
+  // Drop IPA/pronunciation parenthetical chunks that are hard to read.
   out = out.replace(/\s*\(pronounced[^)]*\)/gi, '');
   out = out.replace(/\s*\([^)]*i̯?ɐ̯?ʊ̯?ɑ̯?[^)]*\)/g, '');
-  // Collapse whitespace
-  out = out.replace(/\s+/g, ' ').trim();
-  return out;
+  // Drop bracketed citation marks like [1], [12], [a]
+  out = out.replace(/\[[a-zA-Z0-9]+\]/g, '');
+  // Normalize line endings, collapse 3+ newlines to paragraph breaks
+  out = out.replace(/\r\n?/g, '\n');
+  out = out.replace(/\n{2,}/g, '\n\n');
+  // Collapse runs of spaces (but keep \n)
+  out = out.split('\n').map((line) => line.replace(/[ \t]+/g, ' ').trim()).join('\n');
+  return out.trim();
 }
 
-// Build a blurb of up to ~1500 chars, preferring whole sentences.
+// Build a long blurb — up to ~5000 chars across 4-8 paragraphs, preferring sentence
+// boundaries. Wikipedia extracts come back as plain text with paragraph breaks
+// represented as newlines; we preserve those so the page can render real paragraphs.
 function buildBlurb(extract, fallback) {
   const cleaned = cleanExtract(extract);
   if (!cleaned) return fallback;
-  if (cleaned.length <= 1500) return cleaned;
-  const trimmed = cleaned.slice(0, 1500);
+  if (cleaned.length <= 5000) return cleaned;
+  const trimmed = cleaned.slice(0, 5000);
+  // Prefer paragraph break, then sentence break
+  const lastPara = trimmed.lastIndexOf('\n\n');
+  if (lastPara > 2500) return trimmed.slice(0, lastPara);
   const lastDot = Math.max(trimmed.lastIndexOf('. '), trimmed.lastIndexOf('? '), trimmed.lastIndexOf('! '));
-  return (lastDot > 800 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
+  return (lastDot > 2500 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
 }
 
-// Fetch a longer plain-text extract via the MediaWiki "extracts" API — up to ~4kB
-// of lead text, which we then trim to our blurb cap. Gives 3-4 paragraphs instead
-// of the 1-2 sentence summary returned by the REST /page/summary endpoint.
+// Fetch the full plain-text article body via the MediaWiki "extracts" API.
+// The exchars/exsentences parameters are silently capped server-side, so we
+// instead omit them and request the entire extract (potentially tens of kB),
+// then trim client-side in buildBlurb. exlimit=1 keeps it to a single page.
 async function fetchLongExtract(wikiTitle) {
-  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exintro=0&exchars=4000&redirects=1&format=json&origin=*&titles=${encodeURIComponent(wikiTitle)}`;
+  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exintro=0&exlimit=1&redirects=1&format=json&origin=*&titles=${encodeURIComponent(wikiTitle)}`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA } });
     if (!res.ok) return null;
@@ -206,17 +218,17 @@ async function main() {
       const n = city.neighborhoods[i];
       const r = results[i];
       if (!r.ok) {
-        console.log(`  ✘ ${n.name}  (${r.status || r.error || 'error'})`);
-        failures.push({ city: city.name, name: n.name, wiki: n.wiki });
+        console.log(`  ${n.customBlurb ? '◐' : '✘'} ${n.name}  (${r.status || r.error || 'error'}${n.customBlurb ? ' — using custom blurb' : ''})`);
+        if (!n.customBlurb) failures.push({ city: city.name, name: n.name, wiki: n.wiki });
         entries.push({
           name: n.name, city: city.name, country: city.country, cityRank: n.cityRank,
           tag: n.tag,
-          blurb: `${n.name} is one of the most celebrated neighborhoods in ${city.name}, ${city.country}. ${n.tag}.`,
-          highlights: [],
+          blurb: n.customBlurb || `${n.name} is one of the most celebrated neighborhoods in ${city.name}, ${city.country}. ${n.tag}.`,
+          highlights: n.customHighlights || [],
           wikiUrl: `https://en.wikipedia.org/wiki/${n.wiki}`,
           wikiImage: null,
+          coords: null,
           sources: [
-            { pub: 'Wikipedia', url: `https://en.wikipedia.org/wiki/${n.wiki}` },
             ...sources(city.country),
           ],
         });

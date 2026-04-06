@@ -81,10 +81,12 @@ export default function RootLayout({ children }) {
         <footer style={{ borderTop: '1px solid var(--border)', marginTop: 80, padding: '40px 0 30px', color: 'var(--text-dim)' }}>
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, fontFamily: "'Outfit', sans-serif", fontSize: 12 }}>
             <div>© {new Date().getFullYear()} 50 Best Neighborhoods. Editorial guide.</div>
-            <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               <a href="/about">About</a>
-              <a href="/privacy">Privacy</a>
+              <a href="/blog">Journal</a>
               <a href="/contact">Contact</a>
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
             </div>
           </div>
           <div className="container" style={{ marginTop: 22, fontFamily: "'Outfit', sans-serif", fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 900 }}>
