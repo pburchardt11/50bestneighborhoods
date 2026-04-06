@@ -56,7 +56,22 @@ export default function NeighborhoodPage({ params }) {
       <section className="container" style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)', gap: 56 }}>
         <article>
           <h2 className="serif-display" style={{ fontSize: 32, fontWeight: 400, color: '#f5f0e8', margin: '0 0 16px' }}>About the neighborhood</h2>
+          {n.highlights && n.highlights.length > 0 && (
+            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 10 }}>
+              {n.highlights[0]}
+            </p>
+          )}
           <p style={{ fontSize: 18, lineHeight: 1.75, color: 'var(--text)' }}>{n.blurb}</p>
+          {n.wikiUrl && (
+            <p style={{ marginTop: 10, fontSize: 12, color: 'var(--text-dim)', fontStyle: 'italic' }}>
+              Encyclopedic content adapted from{' '}
+              <a href={n.wikiUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                the Wikipedia article on {n.name}
+              </a>
+              , used under{' '}
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>CC BY-SA 4.0</a>.
+            </p>
+          )}
 
           <h2 className="serif-display" style={{ fontSize: 28, fontWeight: 400, color: '#f5f0e8', margin: '40px 0 14px' }}>Editorial sources</h2>
           <p style={{ color: 'var(--text-dim)', fontSize: 14, marginBottom: 20 }}>

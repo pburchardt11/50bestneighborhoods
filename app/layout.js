@@ -69,7 +69,7 @@ export default function RootLayout({ children }) {
           </div>
         </nav>
         {children}
-        <footer style={{ borderTop: '1px solid var(--border)', marginTop: 80, padding: '40px 0', color: 'var(--text-dim)' }}>
+        <footer style={{ borderTop: '1px solid var(--border)', marginTop: 80, padding: '40px 0 30px', color: 'var(--text-dim)' }}>
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, fontFamily: "'Outfit', sans-serif", fontSize: 12 }}>
             <div>© {new Date().getFullYear()} 50 Best Neighborhoods. Editorial guide.</div>
             <div style={{ display: 'flex', gap: 20 }}>
@@ -77,6 +77,12 @@ export default function RootLayout({ children }) {
               <a href="/privacy">Privacy</a>
               <a href="/contact">Contact</a>
             </div>
+          </div>
+          <div className="container" style={{ marginTop: 22, fontFamily: "'Outfit', sans-serif", fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 900 }}>
+            Encyclopedic neighborhood content on this site is adapted from Wikipedia and used under the{' '}
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              Creative Commons Attribution-ShareAlike 4.0 licence
+            </a>. Editorial rankings, commentary and original prose are © 50 Best Neighborhoods. External publications are linked for reference only.
           </div>
         </footer>
         <Analytics />
