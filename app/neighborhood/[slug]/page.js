@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getNeighborhood, getAllNeighborhoods, neighborhoodSlug, toSlug, heroImage } from '../../../lib/neighborhood-db';
-import { getPOILinks, getGoogleMapsPinUrl, getBookingUrl, getGYGUrl } from '../../../lib/affiliate';
+import { getPOILinks, getGoogleMapsPinUrl, getGYGUrl, getViatorUrl } from '../../../lib/affiliate';
 import MapEmbed from '../../../components/MapEmbed';
 import POIGrid from '../../../components/POIGrid';
 
@@ -31,8 +31,8 @@ export default function NeighborhoodPage({ params }) {
 
   const poiLinks = getPOILinks(n.name, n.city, n.coords);
   const mapPinUrl = getGoogleMapsPinUrl(n.name, n.city, n.country, n.coords);
-  const bookingUrl = getBookingUrl(n.name, n.city, n.country);
   const gygUrl = getGYGUrl(n.name, n.city);
+  const viatorUrl = getViatorUrl(n.name, n.city);
 
   return (
     <main>
@@ -113,26 +113,11 @@ export default function NeighborhoodPage({ params }) {
             </dl>
           </div>
           <a
-            href={bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-            className="card"
-            style={{ display: 'block', padding: 22, marginBottom: 14, background: 'rgba(201,162,75,0.06)' }}
-          >
-            <div className="eyebrow">Where to Stay</div>
-            <div className="serif-display" style={{ fontSize: 22, color: '#f5f0e8', marginTop: 8 }}>
-              Book a hotel in {n.name}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6 }}>
-              Search Booking.com for stays in this neighborhood →
-            </div>
-          </a>
-          <a
             href={gygUrl}
             target="_blank"
             rel="noopener noreferrer sponsored"
             className="card"
-            style={{ display: 'block', padding: 22 }}
+            style={{ display: 'block', padding: 22, marginBottom: 14 }}
           >
             <div className="eyebrow">Things to do</div>
             <div className="serif-display" style={{ fontSize: 20, color: '#f5f0e8', marginTop: 8 }}>
@@ -140,6 +125,21 @@ export default function NeighborhoodPage({ params }) {
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6 }}>
               Browse local tours on GetYourGuide →
+            </div>
+          </a>
+          <a
+            href={viatorUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="card"
+            style={{ display: 'block', padding: 22 }}
+          >
+            <div className="eyebrow">Day trips</div>
+            <div className="serif-display" style={{ fontSize: 20, color: '#f5f0e8', marginTop: 8 }}>
+              Excursions & activities
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6 }}>
+              See more options on Viator →
             </div>
           </a>
         </aside>

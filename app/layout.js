@@ -27,6 +27,9 @@ export const metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.50bestneighborhoods.com' },
   icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }] },
+  verification: {
+    google: 'd_EUxmX_PspSV6FZJVO1uPO6vAehJgXADVnhYEgYNdU',
+  },
 };
 
 export default function RootLayout({ children }) {
