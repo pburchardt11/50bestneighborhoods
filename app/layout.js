@@ -1,7 +1,11 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/react';
+import { ClerkProvider } from '@clerk/nextjs';
 import SearchBar from '../components/SearchBar';
 import LanguageToggle from '../components/LanguageToggle';
+import AuthNav from '../components/AuthNav';
+
+const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export const metadata = {
   metadataBase: new URL('https://www.50bestneighborhoods.com'),
@@ -33,8 +37,8 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
+  const tree = (
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -75,6 +79,7 @@ export default function RootLayout({ children }) {
               <a href="/blog">Blog</a>
               <a href="/favorites" aria-label="My favorites">★</a>
               <a href="/about">About</a>
+              <AuthNav />
             </div>
           </div>
         </nav>
@@ -102,4 +107,6 @@ export default function RootLayout({ children }) {
       </body>
     </html>
   );
+
+  return clerkEnabled ? <ClerkProvider>{tree}</ClerkProvider> : tree;
 }
