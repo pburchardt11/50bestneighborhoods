@@ -1,7 +1,5 @@
 import { SignUp } from '@clerk/nextjs';
 
-const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
 export const metadata = {
   title: 'Sign up',
   description: 'Create a 50 Best Neighborhoods account to sync favorites across devices.',
@@ -15,39 +13,20 @@ export default function SignUpPage() {
       <h1 className="serif-display" style={{ fontSize: 'clamp(40px,6vw,72px)', fontWeight: 400, margin: '14px 0 24px', color: '#f5f0e8', textAlign: 'center' }}>
         Create account
       </h1>
-      {clerkEnabled ? (
-        <SignUp
-          appearance={{
-            variables: {
-              colorPrimary: '#c9a24b',
-              colorBackground: '#121212',
-              colorInputBackground: '#1a1a1a',
-              colorInputText: '#f5f0e8',
-              colorText: '#f5f0e8',
-              colorTextSecondary: '#8f8a82',
-              fontFamily: 'Outfit, sans-serif',
-              borderRadius: '2px',
-            },
-          }}
-        />
-      ) : (
-        <NotConfigured />
-      )}
+      <SignUp
+        appearance={{
+          variables: {
+            colorPrimary: '#c9a24b',
+            colorBackground: '#121212',
+            colorInputBackground: '#1a1a1a',
+            colorInputText: '#f5f0e8',
+            colorText: '#f5f0e8',
+            colorTextSecondary: '#8f8a82',
+            fontFamily: 'Outfit, sans-serif',
+            borderRadius: '2px',
+          },
+        }}
+      />
     </main>
-  );
-}
-
-function NotConfigured() {
-  return (
-    <div style={{ maxWidth: 520, padding: 28, border: '1px solid var(--border)', background: 'rgba(201,162,75,0.04)', textAlign: 'center' }}>
-      <p style={{ color: 'var(--text)', fontSize: 16, lineHeight: 1.7, marginBottom: 16 }}>
-        Sign-up is not yet configured on this deployment. The site administrator
-        needs to add Clerk environment variables and redeploy.
-      </p>
-      <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>
-        Your favorites and wishlist work right now via your browser&rsquo;s local storage —
-        they just don&rsquo;t sync across devices yet.
-      </p>
-    </div>
   );
 }

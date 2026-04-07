@@ -1,56 +1,35 @@
-// AuthNav.js — server component that conditionally renders Clerk's UserButton
-// when env vars are present, or a "Sign in" link when they aren't (or when
-// the user is signed out). Safe to use anywhere in the layout.
+'use client';
 
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+// AuthNav.js — client component so the rest of the app stays statically
+// prerendered. Uses Clerk's client hooks: useUser() returns the current user
+// (null if signed out) and useClerk() exposes the imperative client APIs.
 
-const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+import { UserButton, useUser } from '@clerk/nextjs';
+
+const SIGN_IN_LINK_STYLE = {
+  fontFamily: "'Outfit', sans-serif",
+  fontSize: 12,
+  letterSpacing: 1.2,
+  textTransform: 'uppercase',
+  color: 'var(--accent)',
+};
 
 export default function AuthNav() {
-  if (!clerkEnabled) {
-    // Sign-in not configured yet — link still works but lands on the placeholder page
-    return (
-      <a
-        href="/sign-in"
-        style={{
-          fontFamily: "'Outfit', sans-serif",
-          fontSize: 12,
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          color: 'var(--accent)',
-        }}
-      >
-        Sign in
-      </a>
-    );
+  const { isLoaded, isSignedIn } = useUser();
+
+  // Render a stable placeholder during the SSR/hydration mismatch window
+  if (!isLoaded) {
+    return <span style={{ ...SIGN_IN_LINK_STYLE, opacity: 0 }}>Sign in</span>;
+  }
+
+  if (!isSignedIn) {
+    return <a href="/sign-in" style={SIGN_IN_LINK_STYLE}>Sign in</a>;
   }
 
   return (
-    <>
-      <SignedOut>
-        <a
-          href="/sign-in"
-          style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: 12,
-            letterSpacing: 1.2,
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-          }}
-        >
-          Sign in
-        </a>
-      </SignedOut>
-      <SignedIn>
-        <UserButton
-          afterSignOutUrl="/"
-          appearance={{
-            variables: {
-              colorPrimary: '#c9a24b',
-            },
-          }}
-        />
-      </SignedIn>
-    </>
+    <UserButton
+      afterSignOutUrl="/"
+      appearance={{ variables: { colorPrimary: '#c9a24b' } }}
+    />
   );
 }

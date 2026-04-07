@@ -6,7 +6,8 @@ export async function generateStaticParams() {
   return getAllCities().map((c) => ({ slug: toSlug(c.name) }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const c = getCity(params.slug);
   if (!c) return {};
   const title = `The ${c.count} Best Neighborhoods in ${c.name}`;
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function CityPage({ params }) {
+export default async function CityPage(props) {
+  const params = await props.params;
   const c = getCity(params.slug);
   if (!c) notFound();
   const intro = CITY_INTROS[c.name] || `An editorial guide to the best neighborhoods in ${c.name}, ${c.country}.`;

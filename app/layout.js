@@ -5,8 +5,6 @@ import SearchBar from '../components/SearchBar';
 import LanguageToggle from '../components/LanguageToggle';
 import AuthNav from '../components/AuthNav';
 
-const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
 export const metadata = {
   metadataBase: new URL('https://www.50bestneighborhoods.com'),
   title: {
@@ -37,7 +35,7 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const tree = (
+  return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -48,6 +46,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        <ClerkProvider>
         <nav style={{
           position: 'sticky', top: 0, zIndex: 50,
           background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(12px)',
@@ -103,10 +102,9 @@ export default function RootLayout({ children }) {
           </div>
         </footer>
         <LanguageToggle />
+        </ClerkProvider>
         <Analytics />
       </body>
     </html>
   );
-
-  return clerkEnabled ? <ClerkProvider>{tree}</ClerkProvider> : tree;
 }

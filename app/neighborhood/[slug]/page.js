@@ -12,7 +12,8 @@ export async function generateStaticParams() {
   return getAllNeighborhoods().map((n) => ({ slug: neighborhoodSlug(n) }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const n = getNeighborhood(params.slug);
   if (!n) return {};
   const title = `${n.name}, ${n.city} — #${n.cityRank} Best Neighborhood in ${n.city}`;
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function NeighborhoodPage({ params }) {
+export default async function NeighborhoodPage(props) {
+  const params = await props.params;
   const n = getNeighborhood(params.slug);
   if (!n) notFound();
 

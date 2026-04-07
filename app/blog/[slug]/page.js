@@ -5,7 +5,8 @@ export async function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const p = getPost(params.slug);
   if (!p) return {};
   return {
@@ -16,7 +17,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function BlogPostPage({ params }) {
+export default async function BlogPostPage(props) {
+  const params = await props.params;
   const p = getPost(params.slug);
   if (!p) notFound();
 
@@ -35,7 +37,6 @@ export default function BlogPostPage({ params }) {
           <div style={{ marginTop: 16, fontFamily: "'Outfit', sans-serif", fontSize: 12, color: 'var(--text-dim)' }}>By {p.author}</div>
         </div>
       </section>
-
       <article className="container" style={{ maxWidth: 720, padding: '50px 0' }}>
         {p.body.map((para, i) => (
           <p key={i} style={{ fontSize: 19, lineHeight: 1.8, color: 'var(--text)', marginBottom: 22 }}
