@@ -1,58 +1,23 @@
 'use client';
 
-// WantToGoButton.js — sibling of FavoriteButton. Stores neighborhoods you
-// want to visit, separate from the "saved" list. Same localStorage pattern
-// (key: "wishlist:v1") so the two stores stay independent.
+// WantToGoButton.js — uses the unified useFavs() hook so it automatically
+// syncs to Clerk when the user is signed in, and falls back to localStorage
+// otherwise. UI is unchanged.
 
-import { useEffect, useState } from 'react';
-
-const KEY = 'wishlist:v1';
-
-function readList() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeList(list) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list));
-    window.dispatchEvent(new CustomEvent('wishlist:changed', { detail: { list } }));
-  } catch {}
-}
+import { useFavs } from '../lib/use-favs';
 
 export default function WantToGoButton({ slug, name, city, country, tag }) {
-  const [list, setList] = useState([]);
-  const [hydrated, setHydrated] = useState(false);
+  const { wishlist, hydrated, toggleWish } = useFavs();
+  const inList = wishlist.some((x) => x.slug === slug);
 
-  useEffect(() => {
-    setList(readList());
-    setHydrated(true);
-    const onChange = (e) => setList(e.detail?.list || readList());
-    window.addEventListener('wishlist:changed', onChange);
-    return () => window.removeEventListener('wishlist:changed', onChange);
-  }, []);
-
-  const inList = list.some((x) => x.slug === slug);
-
-  function toggle() {
+  function onClick() {
     if (!hydrated) return;
-    const next = inList
-      ? list.filter((x) => x.slug !== slug)
-      : [...list, { slug, name, city, country, tag, addedAt: Date.now() }];
-    writeList(next);
-    setList(next);
+    toggleWish({ slug, name, city, country, tag });
   }
 
   return (
     <button
-      onClick={toggle}
+      onClick={onClick}
       aria-label={inList ? 'Remove from wishlist' : 'Add to wishlist'}
       style={{
         display: 'inline-flex',

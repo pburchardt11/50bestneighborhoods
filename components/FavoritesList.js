@@ -1,39 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// FavoritesList.js — uses the unified useFavs() hook so it reads from Clerk
+// metadata when signed in, localStorage when signed out. Same two-section UI
+// (Saved + Want to go) regardless of source.
 
-const KEYS = {
-  saved: 'favs:v1',
-  wishlist: 'wishlist:v1',
-};
-const EVENTS = {
-  saved: 'favs:changed',
-  wishlist: 'wishlist:changed',
-};
-const TITLES = {
-  saved: 'Saved',
-  wishlist: 'Want to go',
-};
-const ICONS = {
-  saved: '★',
-  wishlist: '✈',
-};
-const COLORS = {
-  saved: '#c9a24b',
-  wishlist: '#9bb5e0',
-};
+import { useFavs } from '../lib/use-favs';
 
-function readList(key) {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+const TITLES = { saved: 'Saved', wishlist: 'Want to go' };
+const ICONS = { saved: '★', wishlist: '✈' };
+const COLORS = { saved: '#c9a24b', wishlist: '#9bb5e0' };
 
 function Section({ kind, items, onRemove, onClear }) {
   if (items.length === 0) return null;
@@ -46,7 +21,7 @@ function Section({ kind, items, onRemove, onClear }) {
           <span style={{ color: 'var(--text-dim)', fontSize: 14, fontFamily: "'Outfit', sans-serif", letterSpacing: 1.2 }}>· {items.length}</span>
         </h2>
         <button
-          onClick={() => onClear(kind)}
+          onClick={onClear}
           style={{
             background: 'transparent',
             border: '1px solid rgba(229,115,115,0.4)',
@@ -82,7 +57,7 @@ function Section({ kind, items, onRemove, onClear }) {
               View →
             </a>
             <button
-              onClick={() => onRemove(kind, f.slug)}
+              onClick={() => onRemove(f.slug)}
               aria-label={`Remove ${f.name}`}
               style={{
                 background: 'transparent',
@@ -104,41 +79,9 @@ function Section({ kind, items, onRemove, onClear }) {
 }
 
 export default function FavoritesList() {
-  const [saved, setSaved] = useState(null);
-  const [wishlist, setWishlist] = useState(null);
+  const { favs, wishlist, hydrated, isSignedIn, removeFav, removeWish, clearFavs, clearWish } = useFavs();
 
-  useEffect(() => {
-    setSaved(readList(KEYS.saved));
-    setWishlist(readList(KEYS.wishlist));
-    const onSavedChange = () => setSaved(readList(KEYS.saved));
-    const onWishlistChange = () => setWishlist(readList(KEYS.wishlist));
-    window.addEventListener(EVENTS.saved, onSavedChange);
-    window.addEventListener(EVENTS.wishlist, onWishlistChange);
-    window.addEventListener('storage', () => { onSavedChange(); onWishlistChange(); });
-    return () => {
-      window.removeEventListener(EVENTS.saved, onSavedChange);
-      window.removeEventListener(EVENTS.wishlist, onWishlistChange);
-    };
-  }, []);
-
-  function remove(kind, slug) {
-    const current = kind === 'saved' ? saved : wishlist;
-    const next = (current || []).filter((f) => f.slug !== slug);
-    localStorage.setItem(KEYS[kind], JSON.stringify(next));
-    if (kind === 'saved') setSaved(next);
-    else setWishlist(next);
-    window.dispatchEvent(new CustomEvent(EVENTS[kind], { detail: { [kind === 'saved' ? 'favs' : 'list']: next } }));
-  }
-
-  function clear(kind) {
-    if (!confirm(`Clear all ${TITLES[kind].toLowerCase()} from this device?`)) return;
-    localStorage.removeItem(KEYS[kind]);
-    if (kind === 'saved') setSaved([]);
-    else setWishlist([]);
-    window.dispatchEvent(new CustomEvent(EVENTS[kind], { detail: { [kind === 'saved' ? 'favs' : 'list']: [] } }));
-  }
-
-  if (saved === null || wishlist === null) {
+  if (!hydrated) {
     return (
       <section className="container" style={{ marginTop: 56, color: 'var(--text-dim)' }}>
         Loading…
@@ -146,7 +89,7 @@ export default function FavoritesList() {
     );
   }
 
-  const total = saved.length + wishlist.length;
+  const total = favs.length + wishlist.length;
 
   if (total === 0) {
     return (
@@ -156,6 +99,11 @@ export default function FavoritesList() {
         <p style={{ color: 'var(--text-dim)', fontSize: 15, marginTop: 10, marginBottom: 24, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
           On any neighborhood page, tap <strong style={{ color: '#c9a24b' }}>★ Save</strong> for places you love or <strong style={{ color: '#9bb5e0' }}>✈ Want to go</strong> to build your travel wishlist.
         </p>
+        {!isSignedIn && (
+          <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 24 }}>
+            <a href="/sign-in" style={{ color: 'var(--accent)' }}>Sign in</a> to sync your collection across devices.
+          </p>
+        )}
         <a
           href="/top-50"
           style={{
@@ -179,8 +127,24 @@ export default function FavoritesList() {
 
   return (
     <section className="container" style={{ marginTop: 56, marginBottom: 60 }}>
-      <Section kind="saved" items={saved} onRemove={remove} onClear={clear} />
-      <Section kind="wishlist" items={wishlist} onRemove={remove} onClear={clear} />
+      {!isSignedIn && (
+        <div style={{ marginBottom: 32, padding: 18, border: '1px solid rgba(201,162,75,0.3)', background: 'rgba(201,162,75,0.06)', fontSize: 14, color: 'var(--text)' }}>
+          <strong style={{ color: '#c9a24b' }}>Saved on this device only.</strong>{' '}
+          <a href="/sign-in" style={{ color: 'var(--accent)' }}>Sign in</a> to sync your collection across devices.
+        </div>
+      )}
+      <Section
+        kind="saved"
+        items={favs}
+        onRemove={removeFav}
+        onClear={() => { if (confirm('Clear all saved neighborhoods?')) clearFavs(); }}
+      />
+      <Section
+        kind="wishlist"
+        items={wishlist}
+        onRemove={removeWish}
+        onClear={() => { if (confirm('Clear your wishlist?')) clearWish(); }}
+      />
     </section>
   );
 }

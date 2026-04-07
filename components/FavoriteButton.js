@@ -1,61 +1,23 @@
 'use client';
 
-// FavoriteButton.js — localStorage-backed favorites with no account required.
-// Stores a JSON-encoded array of neighborhood slugs under the key "favs:v1".
-// Future upgrade path: swap localStorage for Clerk + Neon when accounts ship.
+// FavoriteButton.js — uses the unified useFavs() hook so it automatically
+// syncs to Clerk when the user is signed in, and falls back to localStorage
+// otherwise. UI is unchanged.
 
-import { useEffect, useState } from 'react';
-
-const KEY = 'favs:v1';
-
-function readFavs() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeFavs(favs) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(favs));
-    // Notify other components on the same page
-    window.dispatchEvent(new CustomEvent('favs:changed', { detail: { favs } }));
-  } catch {}
-}
+import { useFavs } from '../lib/use-favs';
 
 export default function FavoriteButton({ slug, name, city, country, tag }) {
-  const [favs, setFavs] = useState([]);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setFavs(readFavs());
-    setHydrated(true);
-    const onChange = (e) => setFavs(e.detail?.favs || readFavs());
-    window.addEventListener('favs:changed', onChange);
-    return () => window.removeEventListener('favs:changed', onChange);
-  }, []);
-
-  // We persist the slug only; the /favorites page enriches by looking up the
-  // slug in the static dataset, so the stored payload stays tiny.
+  const { favs, hydrated, toggleFav } = useFavs();
   const isFav = favs.some((f) => f.slug === slug);
 
-  function toggle() {
+  function onClick() {
     if (!hydrated) return;
-    const next = isFav
-      ? favs.filter((f) => f.slug !== slug)
-      : [...favs, { slug, name, city, country, tag, addedAt: Date.now() }];
-    writeFavs(next);
-    setFavs(next);
+    toggleFav({ slug, name, city, country, tag });
   }
 
   return (
     <button
-      onClick={toggle}
+      onClick={onClick}
       aria-label={isFav ? 'Remove from favorites' : 'Save to favorites'}
       style={{
         display: 'inline-flex',
