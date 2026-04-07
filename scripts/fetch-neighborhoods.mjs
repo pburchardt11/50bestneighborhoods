@@ -256,40 +256,75 @@ function cleanExtract(text) {
   return out.trim();
 }
 
-// Build a long blurb — up to ~5000 chars across 4-8 paragraphs, preferring sentence
-// boundaries. Wikipedia extracts come back as plain text with paragraph breaks
-// represented as newlines; we preserve those so the page can render real paragraphs.
+// Build a long blurb — up to ~15000 chars across 10-20 paragraphs, preferring
+// sentence boundaries. Wikipedia extracts come back as plain text with paragraph
+// breaks represented as newlines; we preserve those so the page can render real
+// paragraphs. Cap raised from 5000 → 15000 to give every neighborhood the full
+// available context.
 function buildBlurb(extract, fallback) {
   const cleaned = cleanExtract(extract);
   if (!cleaned) return fallback;
-  if (cleaned.length <= 5000) return cleaned;
-  const trimmed = cleaned.slice(0, 5000);
-  // Prefer paragraph break, then sentence break
+  if (cleaned.length <= 15000) return cleaned;
+  const trimmed = cleaned.slice(0, 15000);
   const lastPara = trimmed.lastIndexOf('\n\n');
-  if (lastPara > 2500) return trimmed.slice(0, lastPara);
+  if (lastPara > 8000) return trimmed.slice(0, lastPara);
   const lastDot = Math.max(trimmed.lastIndexOf('. '), trimmed.lastIndexOf('? '), trimmed.lastIndexOf('! '));
-  return (lastDot > 2500 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
+  return (lastDot > 8000 ? trimmed.slice(0, lastDot + 1) : trimmed + '…');
 }
 
-// Fetch the full plain-text article body via the MediaWiki "extracts" API.
-// The exchars/exsentences parameters are silently capped server-side, so we
-// instead omit them and request the entire extract (potentially tens of kB),
-// then trim client-side in buildBlurb. exlimit=1 keeps it to a single page.
+// Fetch the full plain-text article body via the MediaWiki "parse" API.
+// We request prop=text (rendered HTML), strip the HTML to plain text, and
+// preserve paragraph breaks. Unlike the extracts API (capped at ~2-3KB),
+// this returns the entire article (often 30-100KB of usable prose).
 async function fetchLongExtract(wikiTitle) {
-  const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exintro=0&exlimit=1&redirects=1&format=json&origin=*&titles=${encodeURIComponent(wikiTitle)}`;
+  const url = `https://en.wikipedia.org/w/api.php?action=parse&prop=text&page=${encodeURIComponent(wikiTitle)}&redirects=1&disableeditsection=1&disabletoc=1&format=json&origin=*`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA } });
     if (!res.ok) return null;
     const json = await res.json();
-    const pages = json?.query?.pages;
-    if (!pages) return null;
-    for (const p of Object.values(pages)) {
-      if (p.extract) return p.extract;
-    }
-    return null;
+    const html = json?.parse?.text?.['*'];
+    if (!html) return null;
+    return htmlToPlainText(html);
   } catch {
     return null;
   }
+}
+
+// Strip Wikipedia HTML to clean plain text with preserved paragraph breaks.
+// Drops references, infoboxes, tables, image captions, and navigation cruft;
+// keeps body paragraphs.
+function htmlToPlainText(html) {
+  let s = html;
+  // Remove entire elements we don't want
+  s = s.replace(/<table[\s\S]*?<\/table>/gi, '');           // infoboxes, navboxes
+  s = s.replace(/<style[\s\S]*?<\/style>/gi, '');
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, '');
+  s = s.replace(/<sup[^>]*class="[^"]*reference[^"]*"[^>]*>[\s\S]*?<\/sup>/gi, ''); // [1] [2] refs
+  s = s.replace(/<sup[\s\S]*?<\/sup>/gi, '');
+  s = s.replace(/<div[^>]*class="[^"]*(?:hatnote|navbox|metadata|thumb|reflist|references|gallery|mw-editsection|toc|infobox|coordinates|mw-references-wrap|noprint|mw-empty-elt)[^"]*"[\s\S]*?<\/div>/gi, '');
+  s = s.replace(/<figure[\s\S]*?<\/figure>/gi, '');
+  s = s.replace(/<ol[^>]*class="[^"]*references[^"]*"[\s\S]*?<\/ol>/gi, '');
+  // Convert headings and paragraph breaks to double newlines
+  s = s.replace(/<\/(p|h[1-6]|li|blockquote)>/gi, '\n\n');
+  s = s.replace(/<br\s*\/?>/gi, '\n');
+  // Strip remaining tags
+  s = s.replace(/<[^>]+>/g, '');
+  // Decode common HTML entities
+  s = s.replace(/&nbsp;/g, ' ')
+       .replace(/&amp;/g, '&')
+       .replace(/&lt;/g, '<')
+       .replace(/&gt;/g, '>')
+       .replace(/&quot;/g, '"')
+       .replace(/&#39;/g, "'")
+       .replace(/&mdash;/g, '—')
+       .replace(/&ndash;/g, '–')
+       .replace(/&#x?[0-9a-f]+;/gi, '');
+  // Drop bracketed reference markers like [1], [12], [a]
+  s = s.replace(/\[[a-zA-Z0-9]+\]/g, '');
+  // Normalize whitespace
+  s = s.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n');
+  s = s.split('\n').map((line) => line.replace(/[ \t]+/g, ' ').trim()).join('\n');
+  return s.trim();
 }
 
 function jsEscape(str) {

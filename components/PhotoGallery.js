@@ -1,7 +1,9 @@
 // components/PhotoGallery.js
-// Server component — renders a small responsive photo grid using image URLs
-// pulled from the Wikipedia media-list API. All images are CC-licensed and
-// link back to the source article for attribution.
+// Server component — responsive photo grid using next/image so each tile gets
+// AVIF/WebP variants, lazy loading and responsive srcsets. Image URLs come
+// from Vercel Blob (public store) when available, with Wikimedia as fallback.
+
+import Image from 'next/image';
 
 export default function PhotoGallery({ images, name, wikiUrl }) {
   if (!images || images.length === 0) return null;
@@ -23,15 +25,26 @@ export default function PhotoGallery({ images, name, wikiUrl }) {
             target="_blank"
             rel="noopener noreferrer"
             style={{
+              position: 'relative',
               display: 'block',
               aspectRatio: '4 / 3',
-              background: `url('${url}') center/cover no-repeat, #1a1a1a`,
+              overflow: 'hidden',
+              background: '#1a1a1a',
               border: '1px solid var(--border)',
               borderRadius: 2,
-              transition: 'transform 0.2s, border-color 0.2s',
             }}
             aria-label={`${name} photo ${i + 1}`}
-          />
+          >
+            <Image
+              src={url}
+              alt={`${name} photo ${i + 1}`}
+              fill
+              sizes="(max-width: 600px) 50vw, (max-width: 1200px) 33vw, 220px"
+              style={{ objectFit: 'cover' }}
+              loading="lazy"
+              unoptimized={!url.includes('blob.vercel-storage.com')}
+            />
+          </a>
         ))}
       </div>
       <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 11, color: 'var(--text-dim)', marginTop: 14 }}>
