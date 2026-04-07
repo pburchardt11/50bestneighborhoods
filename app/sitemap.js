@@ -1,8 +1,8 @@
 import { getAllNeighborhoods, getAllCities, getAllCountries, neighborhoodSlug, toSlug } from '../lib/neighborhood-db';
 import { getAllPosts } from '../lib/blog-data';
 
-// Override at build time with NEXT_PUBLIC_SITE_URL while DNS is still pointing
-// at vercel.app; remove the env var once 50bestneighborhoods.com goes live.
+// Canonical site URL. NEXT_PUBLIC_SITE_URL can override at build time
+// (used during the DNS cutover); the default is the live custom domain.
 const BASE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.50bestneighborhoods.com').replace(/\/$/, '');
 
 export default function sitemap() {
