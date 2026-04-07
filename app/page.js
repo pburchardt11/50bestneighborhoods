@@ -79,14 +79,35 @@ export default function HomePage() {
       {/* BY CITY */}
       <section className="container" style={{ marginTop: 80 }}>
         <SectionHeader eyebrow="Browse by City" title="Cities" subtitle={`${cities.length} world cities covered, 5 neighborhoods each.`} />
-        <div className="grid-auto" style={{ marginTop: 36 }}>
+        <ul style={{
+          listStyle: 'none', padding: 0, margin: '36px 0 0',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gap: 6,
+        }}>
           {cities.map((c) => (
-            <a key={c.name} href={`/city/${toSlug(c.name)}`} className="card" style={{ padding: 24 }}>
-              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, letterSpacing: 2, color: 'var(--text-dim)', textTransform: 'uppercase' }}>{c.country}</div>
-              <div className="serif-display" style={{ fontSize: 28, marginTop: 6, color: '#f5f0e8' }}>{c.name}</div>
-              <div style={{ marginTop: 12, fontFamily: "'Outfit', sans-serif", fontSize: 12, color: 'var(--accent)' }}>{c.count} neighborhoods →</div>
-            </a>
+            <li key={c.name}>
+              <a
+                href={`/city/${toSlug(c.name)}`}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  gap: 8,
+                  padding: '8px 12px',
+                  border: '1px solid var(--border)',
+                  background: 'rgba(255,255,255,0.012)',
+                  borderRadius: 2,
+                }}
+              >
+                <span className="serif-display" style={{ fontSize: 17, color: '#f5f0e8', lineHeight: 1.2 }}>{c.name}</span>
+                <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, color: 'var(--text-dim)', letterSpacing: 0.5 }}>{c.count}</span>
+              </a>
+            </li>
           ))}
+        </ul>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <a href="/cities" style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent)' }}>
+            All cities, grouped by country →
+          </a>
         </div>
       </section>
 
@@ -109,14 +130,35 @@ export default function HomePage() {
       {/* BY COUNTRY */}
       <section className="container" style={{ marginTop: 80 }}>
         <SectionHeader eyebrow="Browse by Country" title="Countries" subtitle={`${countries.length} countries and counting.`} />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 36 }}>
+        <ul style={{
+          listStyle: 'none', padding: 0, margin: '36px 0 0',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 6,
+        }}>
           {countries.map((c) => (
-            <a key={c.name} href={`/country/${toSlug(c.name)}`} className="card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 22 }}>{c.flag}</span>
-              <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 13, letterSpacing: 0.5 }}>{c.name}</span>
-              <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>· {c.count}</span>
-            </a>
+            <li key={c.name}>
+              <a
+                href={`/country/${toSlug(c.name)}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 13px',
+                  border: '1px solid var(--border)',
+                  background: 'rgba(255,255,255,0.012)',
+                  borderRadius: 2,
+                }}
+              >
+                <span style={{ fontSize: 18, flexShrink: 0 }}>{c.flag}</span>
+                <span style={{ flex: 1, minWidth: 0, fontFamily: "'Outfit', sans-serif", fontSize: 13, color: '#f5f0e8' }}>{c.name}</span>
+                <span style={{ color: 'var(--text-dim)', fontSize: 11, fontFamily: "'Outfit', sans-serif" }}>{c.count}</span>
+              </a>
+            </li>
           ))}
+        </ul>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <a href="/countries" style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent)' }}>
+            All countries →
+          </a>
         </div>
       </section>
     </main>
