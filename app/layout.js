@@ -99,6 +99,21 @@ export default function RootLayout({ children }) {
               <a href="/terms">Terms</a>
             </div>
           </div>
+          <div className="container" style={{ marginTop: 20, textAlign: 'center', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>50 Best Network</div>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '4px 16px', fontFamily: "'Outfit', sans-serif" }}>
+              {[
+                { name: '50 Best Bar', url: 'https://www.50bestbar.com' },
+                { name: '50 Best Peptides', url: 'https://www.50bestpeptides.com' },
+                { name: '50 Best Hotels', url: 'https://www.50besthotels.com' },
+                { name: '50 Best Spa', url: 'https://www.50bestspa.com' },
+                { name: '50 Best Museums', url: 'https://www.50bestmuseums.com' },
+                { name: '50 Best Games', url: 'https://www.50bestgames.com' },
+              ].map(site => (
+                <a key={site.url} href={site.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>{site.name}</a>
+              ))}
+            </div>
+          </div>
           <div className="container" style={{ marginTop: 22, fontFamily: "'Outfit', sans-serif", fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 900 }}>
             Encyclopedic neighborhood content on this site is adapted from Wikipedia and used under the{' '}
             <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
