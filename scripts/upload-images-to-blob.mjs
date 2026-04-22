@@ -45,7 +45,8 @@ const DATA_FILE = join(__dirname, '..', 'lib', 'neighborhood-data.js');
 const LIMIT = process.env.LIMIT ? parseInt(process.env.LIMIT, 10) : Infinity;
 const FORCE = process.env.FORCE === '1';
 const START = process.env.START ? parseInt(process.env.START, 10) : 0;
-const CONCURRENCY = parseInt(process.env.CONCURRENCY || '4', 10);
+const CONCURRENCY = parseInt(process.env.CONCURRENCY || '2', 10);
+const RETRY_ATTEMPTS = 4;
 
 const HERO_WIDTH = 1200;
 const HERO_HEIGHT = 800;
@@ -73,10 +74,29 @@ function slugify(str) {
     .replace(/^-|-$/g, '');
 }
 
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// Polite fetch with exponential backoff on rate-limit / transient errors.
 async function fetchImage(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+  let lastError = null;
+  for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+      // 429 = rate limit, 503 = service unavailable — both worth retrying
+      if (res.status === 429 || res.status === 503 || res.status >= 500) {
+        const wait = Math.min(2000 * Math.pow(2, attempt), 30000);
+        await sleep(wait);
+        lastError = `HTTP ${res.status}`;
+        continue;
+      }
+      throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      lastError = String(e?.message || e);
+      if (attempt < RETRY_ATTEMPTS - 1) await sleep(2000 * (attempt + 1));
+    }
+  }
+  throw new Error(lastError || 'fetch failed');
 }
 
 async function processAndUpload(buffer, blobPath, w, h) {
